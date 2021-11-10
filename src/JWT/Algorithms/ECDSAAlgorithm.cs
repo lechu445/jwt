@@ -1,4 +1,4 @@
-﻿#if NETSTANDARD2_0
+#if NETSTANDARD2_0 || NET5_0
 using System;
 using System.Security.Cryptography;
 using System.Security.Cryptography.X509Certificates;

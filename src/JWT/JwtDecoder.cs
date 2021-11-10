@@ -1,5 +1,4 @@
 using System;
-using System.Collections.Generic;
 using System.Linq;
 using JWT.Algorithms;
 using JWT.Builder;
@@ -117,13 +116,13 @@ namespace JWT
         {
             if (jwt is null)
                 throw new ArgumentNullException(nameof(jwt));
-            if (key is object && key.Length == 0)
-                throw new ArgumentOutOfRangeException(nameof(key));
 
             if (verify)
             {
-                if (_jwtValidator is null || _algFactory is null)
-                    throw new InvalidOperationException("This instance was constructed without validator and algorithm so cannot be used for signature validation");
+                if (_jwtValidator is null)
+                    throw new InvalidOperationException("This instance was constructed without validator so cannot be used for signature validation");
+                if (_algFactory is null)
+                    throw new InvalidOperationException("This instance was constructed without algorithm factory so cannot be used for signature validation");
 
                 Validate(jwt, key);
             }
@@ -141,8 +140,6 @@ namespace JWT
         {
             if (jwt is null)
                 throw new ArgumentNullException(nameof(jwt));
-            if (!AllKeysHaveValues(keys))
-                throw new ArgumentOutOfRangeException(nameof(keys));
 
             if (verify)
             {
@@ -232,8 +229,6 @@ namespace JWT
         {
             if (jwt is null)
                 throw new ArgumentNullException(nameof(jwt));
-            if (!AllKeysHaveValues(keys))
-                throw new ArgumentOutOfRangeException(nameof(keys));
 
             var decodedPayload = GetString(_urlEncoder.Decode(jwt.Payload));
             var decodedSignature = _urlEncoder.Decode(jwt.Signature);
@@ -241,7 +236,7 @@ namespace JWT
             var header = DecodeHeader<JwtHeader>(jwt);
             var alg = _algFactory.Create(JwtDecoderContext.Create(header, decodedPayload, jwt));
 
-            var bytesToSign = GetBytes(String.Concat(jwt.Header, ".", jwt.Payload));
+            var bytesToSign = GetBytes(jwt.Header, (byte)'.', jwt.Payload);
 
             if (alg is IAsymmetricAlgorithm asymmAlg)
             {
@@ -249,27 +244,29 @@ namespace JWT
             }
             else
             {
+                if (!AllKeysHaveValues(keys))
+                    throw new ArgumentOutOfRangeException(nameof(keys));
+
                 // the signature on the token, with the leading =
                 var rawSignature = Convert.ToBase64String(decodedSignature);
 
                 // the signatures re-created by the algorithm, with the leading =
-                var recreatedSignatures = keys.Select(key => alg.Sign(key, bytesToSign))
-                                              .Select(sd => Convert.ToBase64String(sd))
+                var recreatedSignatures = keys.Select(key => Convert.ToBase64String(alg.Sign(key, bytesToSign)))
                                               .ToArray();
 
                 _jwtValidator.Validate(decodedPayload, rawSignature, recreatedSignatures);
             }
         }
 
-        private static bool AllKeysHaveValues(ICollection<byte[]> keys)
+        private static bool AllKeysHaveValues(byte[][] keys)
         {
             if (keys is null)
                 return true;
 
-            if (keys.Count == 0)
+            if (keys.Length == 0)
                 return false;
 
-            return keys.All(key => key.Any());
+            return Array.TrueForAll(keys, key => key.Length > 0);
         }
     }
 }

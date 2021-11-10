@@ -1,4 +1,4 @@
-﻿#if NETSTANDARD2_0
+#if NETSTANDARD2_0 || NET5_0
 using System.Security.Cryptography;
 using System.Security.Cryptography.X509Certificates;
 
@@ -41,7 +41,7 @@ namespace JWT.Algorithms
         }
 
         /// <inheritdoc />
-        public override string Name => JwtAlgorithmName.ES512.ToString();
+        public override string Name => nameof(JwtAlgorithmName.ES512);
 
         /// <inheritdoc />
         public override HashAlgorithmName HashAlgorithmName => HashAlgorithmName.SHA512;

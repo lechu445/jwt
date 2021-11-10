@@ -1,15 +1,16 @@
 ﻿using System;
 using System.Collections.Generic;
-using System.Linq;
 using JWT.Algorithms;
 using JWT.Exceptions;
+
+using static JWT.Internal.EncodingHelper;
 
 #if NET35 || NET40
 using IReadOnlyPayloadDictionary = System.Collections.Generic.IDictionary<string, object>;
 #else
 using IReadOnlyPayloadDictionary = System.Collections.Generic.IReadOnlyDictionary<string, object>;
 #endif
-using static JWT.Internal.EncodingHelper;
+
 #if NET35
 using static JWT.Compatibility.String;
 #else
@@ -126,11 +127,11 @@ namespace JWT
             return ValidateExpClaim(payloadData, secondsSinceEpoch) ?? ValidateNbfClaim(payloadData, secondsSinceEpoch);
         }
 
-        private static bool AreAllDecodedSignaturesNullOrWhiteSpace(IEnumerable<string> decodedSignatures) =>
-            decodedSignatures.All(sgn => IsNullOrWhiteSpace(sgn));
+        private static bool AreAllDecodedSignaturesNullOrWhiteSpace(string[] decodedSignatures) =>
+            Array.TrueForAll(decodedSignatures, sgn => IsNullOrWhiteSpace(sgn));
 
-        private static bool IsAnySignatureValid(string decodedCrypto, IEnumerable<string> decodedSignatures) =>
-            decodedSignatures.Any(decodedSignature => CompareCryptoWithSignature(decodedCrypto, decodedSignature));
+        private static bool IsAnySignatureValid(string decodedCrypto, string[] decodedSignatures) =>
+            Array.Exists(decodedSignatures, decodedSignature => CompareCryptoWithSignature(decodedCrypto, decodedSignature));
 
         /// <remarks>In the future this method can be opened for extension hence made protected virtual</remarks>
         private static bool CompareCryptoWithSignature(string decodedCrypto, string decodedSignature)
